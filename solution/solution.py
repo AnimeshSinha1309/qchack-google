@@ -2,6 +2,7 @@ from typing import List, Tuple
 
 import numpy as np
 import cirq
+import qiskit
 
 
 def matrix_to_sycamore_operations(
@@ -27,4 +28,21 @@ def matrix_to_sycamore_operations(
                 an empty list.
         .
     """
-    return NotImplemented, []
+    # Converting the Unitary to Operations using Qiskit
+    qc = qiskit.QuantumCircuit(len(target_qubits))
+    qc.unitary(matrix, list(range(len(target_qubits))))
+    qc = qiskit.transpile(qc, basis_gates=['cx', 'u3'])
+    # Converting Qiskit to Cirq
+    from cirq.contrib import qasm_import
+    qasm = qc.qasm()
+    qx = cirq.Circuit(qasm_import.circuit_from_qasm(qasm))
+    # Compiling down to the Sycamore hardware
+    convertor = cirq.google.ConvertToSycamoreGates()
+    qz = convertor.convert(qx)
+    # Running an optimization pass
+    qy = cirq.Circuit(qz)
+    qy = cirq.google.optimized_for_sycamore(qy)
+    qy = list(qy.all_operations())
+    
+    ans = qz if len(qy) > len(qz) else qy  # Check if optimizations are doing better
+    return ans, []
