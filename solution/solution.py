@@ -28,6 +28,9 @@ def matrix_to_sycamore_operations(
                 an empty list.
         .
     """
+    if len(target_qubits) > 4:
+        return NotImplemented, []
+    
     # Converting the Unitary to Operations using Qiskit
     qc = qiskit.QuantumCircuit(len(target_qubits))
     qc.unitary(matrix, list(range(len(target_qubits))))
